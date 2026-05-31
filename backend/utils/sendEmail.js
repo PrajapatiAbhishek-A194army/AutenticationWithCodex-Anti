@@ -1,55 +1,33 @@
-const nodemailer = require("nodemailer");
+const { Resend } = require("resend");
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const sendEmail = async ({ to, subject, html, text }) => {
   try {
-    const requiredVariables = [
-      "SMTP_HOST",
-      "SMTP_PORT",
-      "SMTP_MAIL",
-      "SMTP_PASSWORD",
-    ];
-
-    const missingVariables = requiredVariables.filter(
-      (variableName) => !process.env[variableName],
-    );
-
-    if (missingVariables.length > 0) {
-      throw new Error(
-        `Missing email environment variables: ${missingVariables.join(", ")}`,
-      );
+    if (!process.env.RESEND_API_KEY) {
+      throw new Error("Missing RESEND_API_KEY");
     }
 
     if (!to || !subject || (!html && !text)) {
-      throw new Error("Email recipient, subject, and content are required.");
+      throw new Error(
+        "Email recipient, subject, and content are required."
+      );
     }
 
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT),
-      secure: false,
-      auth: {
-        user: process.env.SMTP_MAIL,
-        pass: process.env.SMTP_PASSWORD,
-      },
-    });
-
-    console.log("SMTP_HOST:", process.env.SMTP_HOST);
-    console.log("SMTP_PORT:", process.env.SMTP_PORT);
-    console.log("SMTP_MAIL:", process.env.SMTP_MAIL);
-
-    await transporter.verify();
-    console.log("✅ SMTP connection verified");
-
-    const mailOptions = {
-      from: `"MERN Auth" <${process.env.EMAIL_FROM || process.env.SMTP_MAIL}>`,
+    const response = await resend.emails.send({
+      from: process.env.EMAIL_FROM || "onboarding@resend.dev",
       to,
       subject,
+      html: html || `<p>${text}</p>`,
       text,
-      html,
-    };
+    });
 
-    return await transporter.sendMail(mailOptions);
+    console.log("✅ Email sent successfully");
+    console.log(response);
+
+    return response;
   } catch (error) {
+    console.error("❌ Resend Error:", error);
     throw new Error(`Email could not be sent: ${error.message}`);
   }
 };
