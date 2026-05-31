@@ -24,16 +24,13 @@ const sendEmail = async ({ to, subject, html, text }) => {
     }
 
     const transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 587,
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT),
       secure: false,
-      requireTLS: true,
       auth: {
         user: process.env.SMTP_MAIL,
         pass: process.env.SMTP_PASSWORD,
       },
-      logger: true,
-      debug: true,
     });
 
     console.log("SMTP_HOST:", process.env.SMTP_HOST);
@@ -44,7 +41,7 @@ const sendEmail = async ({ to, subject, html, text }) => {
     console.log("✅ SMTP connection verified");
 
     const mailOptions = {
-      from: `"MERN Auth" <${process.env.SMTP_MAIL}>`,
+      from: `"MERN Auth" <${process.env.EMAIL_FROM || process.env.SMTP_MAIL}>`,
       to,
       subject,
       text,
