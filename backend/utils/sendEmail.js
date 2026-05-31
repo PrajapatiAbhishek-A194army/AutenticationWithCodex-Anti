@@ -1,11 +1,16 @@
-const { Resend } = require("resend");
+const brevo = require("@getbrevo/brevo");
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const apiInstance = new brevo.TransactionalEmailsApi();
+
+apiInstance.setApiKey(
+  brevo.TransactionalEmailsApiApiKeys.apiKey,
+  process.env.BREVO_API_KEY
+);
 
 const sendEmail = async ({ to, subject, html, text }) => {
   try {
-    if (!process.env.RESEND_API_KEY) {
-      throw new Error("Missing RESEND_API_KEY");
+    if (!process.env.BREVO_API_KEY) {
+      throw new Error("Missing BREVO_API_KEY");
     }
 
     if (!to || !subject || (!html && !text)) {
@@ -14,21 +19,36 @@ const sendEmail = async ({ to, subject, html, text }) => {
       );
     }
 
-    const response = await resend.emails.send({
-      from: process.env.EMAIL_FROM || "onboarding@resend.dev",
-      to,
-      subject,
-      html: html || `<p>${text}</p>`,
-      text,
-    });
+    const email = new brevo.SendSmtpEmail();
+
+    email.subject = subject;
+
+    email.sender = {
+      name: process.env.EMAIL_FROM_NAME || "My App",
+      email: process.env.EMAIL_FROM,
+    };
+
+    email.to = Array.isArray(to)
+      ? to.map((email) => ({ email }))
+      : [{ email: to }];
+
+    email.htmlContent = html || `<p>${text}</p>`;
+    email.textContent = text || "";
+
+    const response = await apiInstance.sendTransacEmail(email);
 
     console.log("✅ Email sent successfully");
     console.log(response);
 
     return response;
   } catch (error) {
-    console.error("❌ Resend Error:", error);
-    throw new Error(`Email could not be sent: ${error.message}`);
+    console.error("❌ Brevo Error:", error);
+
+    throw new Error(
+      `Email could not be sent: ${
+        error.response?.body?.message || error.message
+      }`
+    );
   }
 };
 
