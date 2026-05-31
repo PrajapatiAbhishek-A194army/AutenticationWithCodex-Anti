@@ -10,12 +10,12 @@ const sendEmail = async ({ to, subject, html, text }) => {
     ];
 
     const missingVariables = requiredVariables.filter(
-      (variableName) => !process.env[variableName]
+      (variableName) => !process.env[variableName],
     );
 
     if (missingVariables.length > 0) {
       throw new Error(
-        `Missing email environment variables: ${missingVariables.join(", ")}`
+        `Missing email environment variables: ${missingVariables.join(", ")}`,
       );
     }
 
@@ -26,12 +26,23 @@ const sendEmail = async ({ to, subject, html, text }) => {
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: Number(process.env.SMTP_PORT),
-      secure: Number(process.env.SMTP_PORT) === 465,
+      secure: false, // for port 587
+      requireTLS: true,
       auth: {
         user: process.env.SMTP_MAIL,
         pass: process.env.SMTP_PASSWORD,
       },
+      connectionTimeout: 30000,
+      greetingTimeout: 30000,
+      socketTimeout: 30000,
     });
+
+    console.log("SMTP_HOST:", process.env.SMTP_HOST);
+    console.log("SMTP_PORT:", process.env.SMTP_PORT);
+    console.log("SMTP_MAIL:", process.env.SMTP_MAIL);
+
+    await transporter.verify();
+    console.log("✅ SMTP connection verified");
 
     const mailOptions = {
       from: `"MERN Auth" <${process.env.SMTP_MAIL}>`,
